@@ -1,5 +1,11 @@
+import Translate from './components/Translate';
+
 function App() {
-  return <h3>What a good day to code!</h3>;
+  return (
+    <>
+      <Translate />
+    </>
+  );
 }
 
 export default App;
