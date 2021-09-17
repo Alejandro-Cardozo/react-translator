@@ -5,7 +5,10 @@ import axios from 'axios';
 
 export default function Translate() {
   const [inputText, setInputText] = useState('');
-  const [detectLanguageKey, setDetectedLanguageKey] = useState('')
+  const [detectLanguageKey, setDetectedLanguageKey] = useState('');
+  const [languagesList, setLanguagesList] = useState([]);
+  const [selectedLanguageKey, setLanguageKey] = useState('');
+  const [resultText, setResultText] = useState('');
 
   const getLanguageSource = () => {
     axios
@@ -13,10 +16,39 @@ export default function Translate() {
         q: inputText,
       })
       .then((response) => {
-        setDetectedLanguageKey(response.data[0].language)
+        setDetectedLanguageKey(response.data[0].language);
       })
       .catch((e) => console.log(e));
   };
+
+  const languageKey = (selectedLanguage) => {
+    setLanguageKey(selectedLanguage.target.value);
+  };
+
+  const translateText = () => {
+    getLanguageSource();
+
+    let data = {
+      q: inputText,
+      source: detectLanguageKey,
+      target: selectedLanguageKey,
+    };
+    axios
+      .post(`https://libretranslate.de/translate`, data)
+      .then((response) => {
+        setResultText(response.data.translatedText);
+      })
+      .catch((e) => console.log(e));
+  };
+
+  useEffect(() => {
+    axios.get(`https://libretranslate.de/languages`)
+    .then((response) => {
+     setLanguagesList(response.data)
+    })
+
+    getLanguageSource()
+ }, [inputText])
 
   return (
     <>
@@ -32,16 +64,27 @@ export default function Translate() {
                 onChange={(e) => setInputText(e.target.value)}
               />
 
-              <select className={classes['language-select']}>
+              <select
+                className={classes['language-select']}
+                onChange={languageKey}
+              >
                 <option>Please Select Language..</option>
+                {languagesList.map((language) => {
+                  return (
+                    <option key={language.code} value={language.code}>
+                      {language.name}
+                    </option>
+                  );
+                })}
               </select>
 
               <Form.Field
                 control={TextArea}
                 placeholder='Your Result Translation..'
+                value={resultText}
               />
 
-              <Button color='orange' size='large' onClick={getLanguageSource}>
+              <Button color='orange' size='large' onClick={translateText}>
                 <Icon name='translate' />
                 Translate
               </Button>
