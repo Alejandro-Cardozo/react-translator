@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import classes from './Translate.module.css';
-import { Form, TextArea, Button, Icon, Grid } from 'semantic-ui-react';
+import { Form, TextArea, Button, Loader, Icon, Grid } from 'semantic-ui-react';
 import axios from 'axios';
+import SelectLanguage from './SelectLanguage';
 
 export default function Translate() {
   const [inputText, setInputText] = useState('');
@@ -9,16 +10,27 @@ export default function Translate() {
   const [targetLanguage, setTargetLanguage] = useState('');
   const [languagesList, setLanguagesList] = useState([]);
   const [resultText, setResultText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  console.log(sourceLanguage);
 
   const sourceLanguageKeyHandler = (selectedLanguage) => {
-    setSourceLanguage(selectedLanguage.target.value);
+    if (selectedLanguage.target.value) {
+      setSourceLanguage(selectedLanguage.target.value);
+    } else {
+      setSourceLanguage('');
+    }
   };
 
   const targetLanguageKeyHandler = (selectedLanguage) => {
-    setTargetLanguage(selectedLanguage.target.value);
+    if (selectedLanguage.target.value) {
+      setTargetLanguage(selectedLanguage.target.value);
+    } else {
+      setTargetLanguage('');
+    }
   };
 
   const translateText = () => {
+    setIsLoading(true);
     let data = {
       q: inputText,
       source: sourceLanguage,
@@ -28,14 +40,21 @@ export default function Translate() {
       .post(`https://libretranslate.de/translate`, data)
       .then((response) => {
         setResultText(response.data.translatedText);
+        setIsLoading(false);
       })
-      .catch((e) => console.log(e));
+      .catch((e) => {
+        console.log(e);
+        setIsLoading(false);
+      });
   };
 
   useEffect(() => {
-    axios.get(`https://libretranslate.de/languages`).then((response) => {
-      setLanguagesList(response.data);
-    }).catch(e => console.log(e));
+    axios
+      .get(`https://libretranslate.de/languages`)
+      .then((response) => {
+        setLanguagesList(response.data);
+      })
+      .catch((e) => console.log(e));
   }, []);
 
   return (
@@ -46,19 +65,11 @@ export default function Translate() {
           <Grid>
             <Grid.Row columns={2}>
               <Grid.Column>
-                <select
-                  className={classes['language-select']}
-                  onChange={sourceLanguageKeyHandler}
-                >
-                  <option>Please select your language..</option>
-                  {languagesList.map((language) => {
-                    return (
-                      <option key={language.code} value={language.code}>
-                        {language.name}
-                      </option>
-                    );
-                  })}
-                </select>
+                <SelectLanguage
+                  languagesList={languagesList}
+                  languageKeyHandler={sourceLanguageKeyHandler}
+                  placeholder={'Please select your language..'}
+                />
                 <Form.Field
                   control={TextArea}
                   placeholder='Type Text to Translate..'
@@ -66,19 +77,11 @@ export default function Translate() {
                 />
               </Grid.Column>
               <Grid.Column>
-                <select
-                  className={classes['language-select']}
-                  onChange={targetLanguageKeyHandler}
-                >
-                  <option>Please select your target language..</option>
-                  {languagesList.map((language) => {
-                    return (
-                      <option key={language.code} value={language.code}>
-                        {language.name}
-                      </option>
-                    );
-                  })}
-                </select>
+                <SelectLanguage
+                  languagesList={languagesList}
+                  languageKeyHandler={targetLanguageKeyHandler}
+                  placeholder={'Please select your target language..'}
+                />
                 <Form.Field
                   control={TextArea}
                   placeholder='Your Result Translation..'
@@ -92,10 +95,14 @@ export default function Translate() {
             style={{ margin: '15px' }}
             color='orange'
             size='large'
-            disabled={!sourceLanguage || !targetLanguage}
+            disabled={!sourceLanguage || !targetLanguage || isLoading}
             onClick={translateText}
           >
-            <Icon name='translate' />
+            {isLoading ? (
+              <Loader active inline inverted size='tiny' />
+            ) : (
+              <Icon name='translate' />
+            )}
             Translate
           </Button>
         </Form>
